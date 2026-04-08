@@ -5,6 +5,11 @@
     # Track the unstable channel. Use "nixos-25.11" if you prefer the stable release.
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    browser-previews = {
+      url = "github:nix-community/browser-previews";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -55,6 +60,7 @@
         {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
+          home-manager.extraSpecialArgs = { inherit inputs; };
           home-manager.users.dwitt = import ./home.nix;
         }
       ];

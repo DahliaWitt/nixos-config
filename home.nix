@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, inputs, ... }:
 {
   home.username = "dwitt";
   home.homeDirectory = "/home/dwitt";
@@ -11,6 +11,7 @@
     code-cursor
     ghostty
     zed-editor
+    inputs.browser-previews.packages.${pkgs.system}.google-chrome-beta
 
     # CLI essentials (modern replacements - learn these alongside the originals)
     ripgrep
@@ -48,6 +49,7 @@
     nodejs_22
     pnpm
     nil
+    nixd
     doppler
     bubblewrap
 
