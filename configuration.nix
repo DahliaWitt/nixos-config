@@ -72,6 +72,9 @@
     #media-session.enable = true;
   };
 
+  # Compressed in-memory swap helps smooth over memory spikes without disk swap.
+  zramSwap.enable = true;
+
   # Define a user account. Don't forget to set a password with 'passwd'.
   users.users.dwitt = {
     isNormalUser = true;

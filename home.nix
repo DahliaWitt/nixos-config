@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 {
   home.username = "dwitt";
   home.homeDirectory = "/home/dwitt";
@@ -23,6 +23,7 @@
     unzip
     p7zip
     tldr
+    gh
     nix-your-shell
 
     # File sync / remote work
@@ -46,12 +47,15 @@
     # Dev tools
     nodejs_22
     pnpm
+    nil
     doppler
+    bubblewrap
 
     # AI coding assistants (via overlay → third-party flakes for fresh updates)
     claude-code
     antigravity
     codex
+    gemini-cli
     t3
     t3code
   ];
@@ -74,7 +78,8 @@
     [Desktop Entry]
     Type=Application
     Name=Ghostty
-    Exec=ghostty
+    # Start the single-instance app without creating an initial normal window.
+    Exec=ghostty --gtk-single-instance=true --initial-window=false
     X-GNOME-Autostart-enabled=true
     Hidden=false
     NoDisplay=false
@@ -169,13 +174,30 @@
       quick-terminal-screen = "main";
       quick-terminal-autohide = false;
       gtk-single-instance = true;
-      quick-terminal-size = "50%,100%";  # height, width
+      # KWin doesn't reliably expose edge-resize for the layer-shell quick
+      # terminal, so keep a predictable config-driven height instead.
+      quick-terminal-size = "40%,100%";  # height, width
 
       keybind = [
         "global:f12=toggle_quick_terminal"
       ];
     };
   };
+
+  # Plasma's Sliding Popups effect animates the Ghostty quick terminal on
+  # Wayland. On this setup that path is visually glitchy, so prefer instant and
+  # reliable show/hide over compositor animation.
+  home.activation.disableKWinSlidingPopups =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      config_dir="''${XDG_CONFIG_HOME:-$HOME/.config}"
+      /run/current-system/sw/bin/kwriteconfig6 \
+        --file "$config_dir/kwinrc" \
+        --group Plugins \
+        --key slidingpopupsEnabled \
+        --type bool \
+        false \
+        --notify
+    '';
 
   # nh - nicer nixos-rebuild wrapper with periodic cleanup
   programs.nh = {
@@ -190,14 +212,115 @@
   # Git with your rebase workflow
   programs.git = {
     enable = true;
-    userName = "Dahlia Witt";
-    userEmail = "dwitt@dranweb.com";
-    extraConfig = {
+    settings = {
+      user.name = "Dahlia Witt";
+      user.email = "dwitt@dranweb.com";
       init.defaultBranch = "main";
       pull.rebase = true;
       rebase.autoStash = true;
       rebase.updateRefs = true;
     };
+  };
+
+  # tmux with Home Manager-managed plugins instead of TPM
+  programs.tmux = {
+    enable = true;
+    sensibleOnTop = true;
+    prefix = "C-a";
+    mouse = true;
+    focusEvents = true;
+    escapeTime = 50;
+    historyLimit = 30000;
+    terminal = "tmux-256color";
+
+    extraConfig = ''
+      # Reload the generated Home Manager config.
+      bind r source-file ~/.config/tmux/tmux.conf
+
+      # Forward copies to the terminal clipboard when supported.
+      set -g set-clipboard on
+
+      # split panes using | and -
+      bind | split-window -h
+      bind - split-window -v
+
+      # switch windows using alt-arrow without prefix
+      bind -n M-Left previous-window
+      bind -n M-Right next-window
+
+      # switch panes using Ctrl-arrow without prefix
+      bind -n C-Left select-pane -L
+      bind -n C-Right select-pane -R
+      bind -n C-Up select-pane -U
+      bind -n C-Down select-pane -D
+
+      # Set ability to capture on start and restore on exit window data when
+      # running an application.
+      setw -g alternate-screen on
+
+      # don't rename windows automatically
+      set-option -g allow-rename off
+
+      ######################
+      ### DESIGN CHANGES ###
+      ######################
+
+      ## Status bar design
+
+      # loud or quiet?
+      set-option -g visual-activity off
+      set-option -g visual-bell off
+      set-option -g visual-silence off
+      set-window-option -g monitor-activity off
+      set-option -g bell-action none
+
+      # The modes
+      setw -g clock-mode-colour colour135
+      setw -g mode-style "fg=colour196 bg=colour238 bold"
+
+      # The panes
+      set -g pane-border-style "fg=colour238 bg=colour235"
+      set -g pane-active-border-style "fg=colour51 bg=colour236"
+
+      # The statusbar
+      set -g status-style "fg=colour137 bg=colour234 dim"
+      set -g status-interval 1
+      set -g status-justify left
+      set -g status-left ""
+      set -g status-left-length 20
+      set -g status-position bottom
+      set -g status-right "#[fg=colour233 bg=colour241,bold] %d/%m #[fg=colour233 bg=colour245,bold] %H:%M:%S "
+      set -g status-right-length 50
+
+      # window status
+      setw -g window-status-current-style "fg=colour81 bg=colour238 bold"
+      setw -g window-status-current-format " #I#[fg=colour250]:#[fg=colour255]#W#[fg=colour50]#F "
+
+      setw -g window-status-style "fg=colour138 bg=colour235 none"
+      setw -g window-status-format " #I#[fg=colour237]:#[fg=colour250]#W#[fg=colour244]#F "
+
+      setw -g window-status-bell-style "fg=colour255 bg=colour1 bold"
+
+      # The messages
+      set -g message-style "fg=colour232 bg=colour166 bold"
+    '';
+
+    plugins = with pkgs.tmuxPlugins; [
+      yank
+      better-mouse-mode
+      {
+        plugin = tmux-thumbs;
+        extraConfig = ''
+          set -g @thumbs-osc52 on
+        '';
+      }
+      {
+        plugin = resurrect;
+        extraConfig = ''
+          set -g @resurrect-save-shell-history 'on'
+        '';
+      }
+    ];
   };
 
   programs.home-manager.enable = true;
