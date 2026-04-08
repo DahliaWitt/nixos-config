@@ -98,6 +98,8 @@
   # Install firefox.
   programs.firefox.enable = true;
 
+  programs.nix-ld.enable = true;
+
   # System-level packages (minimal - most user stuff lives in home.nix now)
   environment.systemPackages = with pkgs; [
     vim

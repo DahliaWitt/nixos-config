@@ -34,9 +34,117 @@
       url = "github:Sawrz/t3code-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    playwright = {
+      url = "github:pietdevries94/playwright-web-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  let
+    endcordPackage = {
+      lib,
+      stdenvNoCC,
+      fetchFromGitHub,
+      makeWrapper,
+      python313,
+      aspellWithDicts,
+      git,
+      glib,
+      gnome-keyring,
+      kdePackages,
+      libnotify,
+      libsecret,
+      mpv,
+      pipewire,
+      wl-clipboard,
+      xclip,
+      xdg-utils,
+      yt-dlp,
+      zenity,
+    }:
+    let
+      python = python313;
+      pythonEnv = python.withPackages (ps: [
+        ps.av
+        ps.emoji
+        ps.filetype
+        ps.keyring
+        ps.numpy
+        ps.orjson
+        ps.pillow
+        ps.protobuf
+        ps.pycryptodome
+        ps.pynacl
+        ps.pyperclip
+        ps.pysocks
+        ps.pystray
+        ps."python-socks"
+        ps.qrcode
+        ps.secretstorage
+        ps.soundcard
+        ps.soundfile
+        ps.urllib3
+        ps."websocket-client"
+      ]);
+
+      aspell = aspellWithDicts (dicts: [ dicts.en ]);
+      runtimeInputs = [
+        aspell
+        git
+        glib
+        gnome-keyring
+        kdePackages.kdialog
+        libnotify
+        libsecret
+        mpv
+        pipewire
+        wl-clipboard
+        xclip
+        xdg-utils
+        yt-dlp
+        zenity
+      ];
+    in
+    stdenvNoCC.mkDerivation (finalAttrs: {
+      pname = "endcord";
+      version = "1.4.1";
+
+      src = fetchFromGitHub {
+        owner = "sparklost";
+        repo = "endcord";
+        rev = finalAttrs.version;
+        hash = "sha256-1CFr9Y/5qZfkTIOFBuN7MlvJsnmOp9JK/ZJB3INWxpY=";
+      };
+
+      nativeBuildInputs = [ makeWrapper ];
+
+      dontBuild = true;
+
+      installPhase = ''
+        runHook preInstall
+
+        mkdir -p "$out/bin" "$out/share/endcord"
+        cp -r . "$out/share/endcord"
+
+        makeWrapper ${pythonEnv}/bin/python "$out/bin/endcord" \
+          --add-flags "$out/share/endcord/main.py" \
+          --set PYTHONPATH "$out/share/endcord" \
+          --prefix PATH : ${lib.makeBinPath runtimeInputs}
+
+        runHook postInstall
+      '';
+
+      meta = with lib; {
+        description = "Feature-rich Discord TUI client";
+        homepage = "https://github.com/sparklost/endcord";
+        license = licenses.gpl3Only;
+        mainProgram = "endcord";
+        platforms = platforms.linux;
+      };
+    });
+  in {
     nixosConfigurations.nixos-btw = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       specialArgs = { inherit inputs; };
@@ -46,13 +154,25 @@
         # Overlay: expose third-party flake packages as if they were in nixpkgs
         {
           nixpkgs.overlays = [
-            (final: prev: {
-              claude-code = inputs.claude-code-nix.packages.${prev.system}.default;
-              antigravity = inputs.antigravity-nix.packages.${prev.system}.default;
-              codex = inputs.codex-cli-nix.packages.${prev.system}.default;
-              t3code = inputs.t3code-nix.packages.${prev.system}.t3code;
-              t3 = inputs.t3code-nix.packages.${prev.system}.t3;
-            })
+            (final: prev:
+              let
+                playwright-src = final.applyPatches {
+                  name = "playwright-web-flake-patched";
+                  src = inputs.playwright;
+                  patches = [ ./patches/playwright-web-flake-libhyphen.patch ];
+                };
+                playwright-packages =
+                  final.callPackage "${playwright-src}/playwright-driver/driver.nix" { };
+              in {
+                claude-code = inputs.claude-code-nix.packages.${prev.system}.default;
+                antigravity = inputs.antigravity-nix.packages.${prev.system}.default;
+                codex = inputs.codex-cli-nix.packages.${prev.system}.default;
+                endcord = prev.callPackage endcordPackage { };
+                t3code = inputs.t3code-nix.packages.${prev.system}.t3code;
+                t3 = inputs.t3code-nix.packages.${prev.system}.t3;
+                playwright-test = playwright-packages.playwright-test;
+                playwright-driver = playwright-packages.playwright-core;
+              })
           ];
         }
 

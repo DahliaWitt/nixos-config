@@ -12,8 +12,12 @@
     ghostty
     zed-editor
     inputs.browser-previews.packages.${pkgs.system}.google-chrome-beta
+    discord
+    discordo
+    endcord
 
     # CLI essentials (modern replacements - learn these alongside the originals)
+    htop
     ripgrep
     fd
     bat
@@ -26,6 +30,9 @@
     tldr
     gh
     nix-your-shell
+
+    # Misc CLI
+    fastfetch
 
     # File sync / remote work
     rsync
@@ -52,6 +59,7 @@
     nixd
     doppler
     bubblewrap
+    just
 
     # AI coding assistants (via overlay → third-party flakes for fresh updates)
     claude-code
@@ -60,15 +68,19 @@
     gemini-cli
     t3
     t3code
+    playwright-test
   ];
 
   # Cross-shell session variables (available in both fish and bash)
   home.sessionVariables = {
-    EDITOR = "zed --wait";
+    EDITOR = "zeditor --wait";
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
+    PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
   };
 
   # Cross-shell aliases - these work in both fish and bash
   home.shellAliases = {
+    zed = "zeditor";
     nrs = "nh os switch";
     nrt = "nh os test";
     nrb = "nh os boot";
@@ -93,6 +105,11 @@
 
     interactiveShellInit = ''
       set fish_greeting  # disable the startup greeting
+
+      # Keep suggestions visible and make Tab open the completion pager
+      # immediately instead of waiting for a second Tab press.
+      set -g fish_autosuggestion_enabled 1
+      bind tab complete-and-search
 
       # nix-your-shell: make nix-shell / nix develop use fish instead of bash
       nix-your-shell fish | source
@@ -170,6 +187,7 @@
       theme = "Fairyfloss";
       font-family = "Hack Nerd Font";
       font-size = 12;
+      background-opacity = 0.95;
 
       # Quick terminal (drop-down mode)
       quick-terminal-position = "top";
@@ -178,10 +196,11 @@
       gtk-single-instance = true;
       # KWin doesn't reliably expose edge-resize for the layer-shell quick
       # terminal, so keep a predictable config-driven height instead.
-      quick-terminal-size = "40%,100%";  # height, width
+      quick-terminal-size = "100%,100%";  # height, width
 
       keybind = [
         "global:f12=toggle_quick_terminal"
+        "f11=toggle_fullscreen"
       ];
     };
   };
