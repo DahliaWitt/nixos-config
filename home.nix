@@ -317,6 +317,19 @@ in
         0
     '';
 
+  # Marks the Plasma session idle after 15 min without input, for
+  # autosuspend in remote.nix (Plasma doesn't report idle to logind).
+  services.swayidle = {
+    enable = true;
+    timeouts = [
+      {
+        timeout = 900;
+        command = "${pkgs.coreutils}/bin/touch \"$XDG_RUNTIME_DIR/desktop-idle\"";
+        resumeCommand = "${pkgs.coreutils}/bin/rm -f \"$XDG_RUNTIME_DIR/desktop-idle\"";
+      }
+    ];
+  };
+
   # nh - nicer nixos-rebuild wrapper with periodic cleanup
   programs.nh = {
     enable = true;

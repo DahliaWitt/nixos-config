@@ -28,6 +28,14 @@ let
     # USER_HZ is 100, so 3% of one CPU over 10 s is 30 ticks.
     [ $(( b - a )) -gt 30 ]
   '';
+  # Exits 0 (busy) while dwitt has a graphical session that swayidle has not
+  # marked idle.
+  desktopBusy = pkgs.writeShellScript "desktop-busy" ''
+    PATH=${pkgs.coreutils}/bin:${pkgs.systemd}/bin
+    uid=$(id -u dwitt) || exit 1
+    [ -n "$(loginctl show-user dwitt -p Display --value 2>/dev/null)" ] || exit 1
+    [ ! -e "/run/user/$uid/desktop-idle" ]
+  '';
   macbookKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA+LD+MInHfSHRsj6Wic41FXsx0jFAf1fhPNBP1kmPNg macbook->nixos-btw";
 in
 {
@@ -121,9 +129,11 @@ in
         class = "ActiveConnection";
         ports = "22";
       };
-      # Someone is using the desktop itself.
-      LocalSession = {
-        class = "LogindSessionsIdle";
+      # Someone is using the desktop itself. Plasma never sets logind's idle
+      # hint, so swayidle (home.nix) marks 15 min without input instead.
+      LocalDesktop = {
+        class = "ExternalCommand";
+        command = "${desktopBusy}";
       };
       # Builds, tests, nix-daemon work.
       Load = {
