@@ -82,7 +82,12 @@ scp -q "$STAGE/claude-settings.local.json" "$DEST:.claude/settings.local.json"
 python3 - "$STAGE/codex-config.toml" <<'PY'
 import sys, tomllib, json, pathlib
 src = tomllib.loads((pathlib.Path.home() / ".codex/config.toml").read_text())
-def q(v): return json.dumps(v)
+def q(v):
+    if isinstance(v, dict):
+        return "{" + ", ".join(f"{k} = {q(x)}" for k, x in v.items()) + "}"
+    if isinstance(v, list):
+        return "[" + ", ".join(q(x) for x in v) + "]"
+    return json.dumps(v)
 out = []
 for k in ("model", "model_reasoning_effort", "approval_policy", "sandbox_mode", "service_tier", "memories"):
     if k in src: out.append(f"{k} = {q(src[k])}")
@@ -108,8 +113,8 @@ PY
 scp -q "$STAGE/codex-config.toml" "$DEST:.codex/config.toml"
 
 # kimi/deepseek/glm wrappers: GNU timeout, key from a file, pi from PATH.
-sed -e 's/command -v gtimeout >\/dev\/null || fail 2 "gtimeout missing (brew install coreutils)"/TIMEOUT=$(command -v gtimeout || command -v timeout) || fail 2 "timeout missing"/' \
-    -e 's/gtimeout -k 10/"$TIMEOUT" -k 10/' \
+sed -e 's/command -v gtimeout >\/dev\/null || fail 2 "gtimeout missing (brew install coreutils)"/TIMEOUT_BIN=$(command -v gtimeout || command -v timeout) || fail 2 "timeout missing"/' \
+    -e 's/gtimeout -k 10/"$TIMEOUT_BIN" -k 10/' \
     -e 's#KEY=${SYNTHETIC_API_KEY:-$(security find-generic-password -a "$USER" -s synthetic-api-key -w 2>/dev/null)}#KEY=${SYNTHETIC_API_KEY:-$(cat ~/.config/synthetic/api-key 2>/dev/null || security find-generic-password -a "$USER" -s synthetic-api-key -w 2>/dev/null)}#' \
     -e "s#/Users/dwitt#$RHOME#g" \
     "$(readlink -f .local/bin/kimi)" > "$STAGE/kimi"

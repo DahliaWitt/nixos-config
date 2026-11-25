@@ -4,6 +4,7 @@
 # Fast-moving agent CLIs (claude, codex, pi, cursor-agent, droid, agy) are
 # installed with their own installers or npm into ~/.local and ~/.npm-global,
 # so they self-update like on the Mac. Nix provides the stable tooling.
+# Projects bring their own Playwright and browsers (see nix-ld in remote.nix).
 { pkgs, ... }:
 {
   home.username = "agent";
@@ -22,7 +23,6 @@
     python3
     uv
     bubblewrap
-    playwright-test
   ];
 
   # The T3 installer puts `t3` in ~/.local/bin.
@@ -33,8 +33,6 @@
 
   home.sessionVariables = {
     NPM_CONFIG_PREFIX = "$HOME/.npm-global";
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1";
-    PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
   };
 
   programs.bash.enable = true;

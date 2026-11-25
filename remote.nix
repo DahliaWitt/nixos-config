@@ -68,6 +68,33 @@ in
     openssh.authorizedKeys.keys = [ macbookKey ];
   };
 
+  # Libraries for browsers that Playwright downloads per project (each repo
+  # pins its own revision, which rarely matches the one in nixpkgs).
+  programs.nix-ld.libraries = with pkgs; [
+    alsa-lib
+    at-spi2-atk
+    at-spi2-core
+    atk
+    cairo
+    cups
+    dbus
+    expat
+    glib
+    libgbm
+    libxkbcommon
+    nspr
+    nss
+    pango
+    systemd
+    libx11
+    libxcb
+    libxcomposite
+    libxdamage
+    libxext
+    libxfixes
+    libxrandr
+  ];
+
   # Rootless containers for agents and CI, with a docker-compatible CLI.
   virtualisation.podman = {
     enable = true;
