@@ -32,7 +32,10 @@
   ];
 
   # The T3 service gets PATH from the systemd user manager, not the shell.
-  systemd.user.sessionVariables.PATH = "$HOME/.local/bin:$HOME/.npm-global/bin:\${PATH}";
+  # Named 60- so it runs after NixOS's /etc/environment.d/50-systemd-path.conf.
+  xdg.configFile."environment.d/60-agent-path.conf".text = ''
+    PATH=/home/agent/.local/bin:/home/agent/.npm-global/bin:''${PATH}
+  '';
 
   home.sessionVariables = {
     NPM_CONFIG_PREFIX = "$HOME/.npm-global";
