@@ -118,7 +118,10 @@ in
   # watches keyboard and mouse, so it is turned off in home.nix and this
   # decides instead. It suspends after 20 minutes with none of the following.
   services.autosuspend = {
-    enable = true;
+    # Off until Wake-on-LAN can reach the desktop: whiterose (192.168.2.x)
+    # has no route to the Kabelsalat Wi-Fi (192.168.1.x), so a sleeping box
+    # can't be woken remotely yet.
+    enable = false;
     settings = {
       interval = 60;
       idle_time = 1200;
