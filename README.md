@@ -14,7 +14,7 @@ Use `nrs` to store and reload changes.
 
 T3 runs as the `t3code` systemd user service for `agent`, declared in `agent-home.nix`, with the memory protection `t3 service protect` would add declared across `agent-home.nix` and `remote.nix`. It serves on `https://nixos-btw.taile451e0.ts.net` (Tailscale Serve) and on port 3773 over the tailnet. The version is pinned in `pkgs/t3.nix`. Don't use `t3 update` or `t3 service`.
 
-`pkgs/update.sh` runs `nix flake update` and bumps `pkgs/t3.nix` to the latest stable T3 release. Run it on the host, then rebuild.
+Updates are automatic. `.github/workflows/update.yml` runs `pkgs/update.sh` daily at 04:00 Pacific: it runs `nix flake update`, bumps `pkgs/t3.nix` to the latest stable T3 release, checks that `nixos-btw` still evaluates, and commits to `main`. If evaluation fails, the update goes to the `update-failed` branch and the run fails. At 05:00 the host's `system.autoUpgrade` switches to `github:DahliaWitt/nixos-config`. Pull before editing locally, since the bot commits to `main`.
 
 `scripts/sync-agent-harnesses.sh` mirrors the Mac's harness setup to `agent`: aihub rules and skill repos, `~/.agents/skills`, Claude/Codex/Pi config and plugins, the kimi/deepseek/glm wrappers, and logins. Re-run it after changing skills or config on the Mac. `NO_CREDS=1` skips the logins.
 

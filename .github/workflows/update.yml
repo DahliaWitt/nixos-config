@@ -1,0 +1,58 @@
+# Daily update: bump flake inputs and pkgs/ pins, check that the system still
+# evaluates, and commit to main. nixos-btw picks it up with system.autoUpgrade
+# (remote.nix) an hour later. If evaluation fails, the attempted update goes
+# to the `update-failed` branch and the run fails, so GitHub emails the owner.
+name: update
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # 04:00 Pacific (PST)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: cachix/install-nix-action@v32.1.0
+
+      - name: Bump inputs and pins
+        run: pkgs/update.sh
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat
+          fi
+
+      - name: Evaluate nixos-btw
+        id: eval
+        if: steps.diff.outputs.changed == 'true'
+        continue-on-error: true
+        run: nix eval --raw .#nixosConfigurations.nixos-btw.config.system.build.toplevel.drvPath
+
+      - name: Commit
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update flake inputs and pins"
+          if [ "${{ steps.eval.outcome }}" = success ]; then
+            git push origin HEAD:main
+          else
+            git push --force origin HEAD:update-failed
+            echo "::error::nixos-btw failed to evaluate; see the update-failed branch"
+            exit 1
+          fi

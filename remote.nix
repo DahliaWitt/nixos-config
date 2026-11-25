@@ -107,6 +107,17 @@ in
     OOMScoreAdjust = -900;
   };
 
+  # Follow main on GitHub, which .github/workflows/update.yml bumps daily at
+  # 04:00. A failed build leaves the running generation in place; no reboots.
+  system.autoUpgrade = {
+    enable = true;
+    flake = "github:DahliaWitt/nixos-config#nixos-btw";
+    dates = "05:00";
+    randomizedDelaySec = "15min";
+    operation = "switch";
+    allowReboot = false;
+  };
+
   # Libraries for browsers that Playwright downloads per project (each repo
   # pins its own revision, which rarely matches the one in nixpkgs).
   programs.nix-ld.libraries = with pkgs; [
