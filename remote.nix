@@ -89,6 +89,9 @@ in
   };
   systemd.services."user@1001" = {
     overrideStrategy = "asDropin";
+    # Don't set a minimal PATH on the user manager; its services get theirs
+    # from environment.d (agent-home.nix).
+    enableDefaultPath = false;
     serviceConfig = {
       MemoryLow = "2G";
       OOMScoreAdjust = -900;
