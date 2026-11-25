@@ -158,6 +158,7 @@
                 antigravity = inputs.antigravity-nix.packages.${prev.stdenv.hostPlatform.system}.default;
                 codex = inputs.codex-cli-nix.packages.${prev.stdenv.hostPlatform.system}.default;
                 endcord = prev.callPackage endcordPackage { };
+                t3 = final.callPackage ./pkgs/t3.nix { };
                 playwright-test = playwright-packages.playwright-test;
                 playwright-driver = playwright-packages.playwright-core;
               })

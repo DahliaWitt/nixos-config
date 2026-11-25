@@ -69,11 +69,39 @@ in
 
   users.users.agent = {
     isNormalUser = true;
+    # Pinned: the memory protection below names user-1001.slice and user@1001.
+    uid = 1001;
     description = "T3 Code, coding agents and CI";
     # Start user services (the T3 server) at boot, with nobody logged in.
     linger = true;
     # SSH in as agent so `t3 up` gets a real systemd user session.
     openssh.authorizedKeys.keys = [ macbookKey ];
+  };
+
+  # What `t3 service protect` sets up, declared here instead (user side in
+  # agent-home.nix). Memory protection reaches the T3 server only if every
+  # ancestor cgroup grants it, and the remote-access daemons outlive agents
+  # under memory pressure so the box stays reachable.
+  systemd.slices.user.sliceConfig.MemoryLow = "2G";
+  systemd.slices."user-1001" = {
+    overrideStrategy = "asDropin";
+    sliceConfig.MemoryLow = "2G";
+  };
+  systemd.services."user@1001" = {
+    overrideStrategy = "asDropin";
+    serviceConfig = {
+      MemoryLow = "2G";
+      OOMScoreAdjust = -900;
+    };
+  };
+  systemd.slices.system.sliceConfig.MemoryLow = "512M";
+  systemd.services.sshd.serviceConfig = {
+    MemoryLow = "256M";
+    OOMScoreAdjust = -900;
+  };
+  systemd.services.tailscaled.serviceConfig = {
+    MemoryLow = "256M";
+    OOMScoreAdjust = -900;
   };
 
   # Libraries for browsers that Playwright downloads per project (each repo
