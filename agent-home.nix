@@ -31,6 +31,9 @@
     "$HOME/.npm-global/bin"
   ];
 
+  # The T3 service gets PATH from the systemd user manager, not the shell.
+  systemd.user.sessionVariables.PATH = "$HOME/.local/bin:$HOME/.npm-global/bin:\${PATH}";
+
   home.sessionVariables = {
     NPM_CONFIG_PREFIX = "$HOME/.npm-global";
   };
