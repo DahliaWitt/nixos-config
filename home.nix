@@ -304,6 +304,19 @@ in
         --notify
     '';
 
+  # Turn off Plasma's idle suspend on AC. It only sees keyboard and mouse, so
+  # it would sleep mid agent run; autosuspend in remote.nix decides instead.
+  home.activation.disablePlasmaIdleSuspend =
+    lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      config_dir="''${XDG_CONFIG_HOME:-$HOME/.config}"
+      /run/current-system/sw/bin/kwriteconfig6 \
+        --file "$config_dir/powerdevilrc" \
+        --group AC \
+        --group SuspendAndShutdown \
+        --key AutoSuspendAction \
+        0
+    '';
+
   # nh - nicer nixos-rebuild wrapper with periodic cleanup
   programs.nh = {
     enable = true;
