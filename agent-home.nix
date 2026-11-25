@@ -52,6 +52,9 @@
       init.defaultBranch = "main";
       pull.rebase = true;
       rebase.autoStash = true;
+      # HTTPS auth to GitHub through `gh auth login`.
+      credential."https://github.com".helper = "!${pkgs.gh}/bin/gh auth git-credential";
+      credential."https://gist.github.com".helper = "!${pkgs.gh}/bin/gh auth git-credential";
     };
   };
 
