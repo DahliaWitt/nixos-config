@@ -95,6 +95,11 @@ in
     libxrandr
   ];
 
+  # Playwright's `channel: "chrome"` looks for Google Chrome at the FHS path.
+  systemd.tmpfiles.rules = [
+    "L+ /opt/google/chrome/chrome - - - - ${pkgs.google-chrome}/bin/google-chrome-stable"
+  ];
+
   # Rootless containers for agents and CI, with a docker-compatible CLI.
   virtualisation.podman = {
     enable = true;
