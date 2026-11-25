@@ -1,4 +1,55 @@
 { config, lib, pkgs, inputs, ... }:
+let
+  codexConfigText = ''
+    [projects."/home/dwitt"]
+    trust_level = "trusted"
+
+    [projects."/home/dwitt/nixos-config"]
+    trust_level = "trusted"
+
+    [projects."/home/dwitt/workspace/braket-tickets"]
+    trust_level = "trusted"
+
+    [features]
+    experimental_use_rmcp_client = true
+
+    [plugins."stripe@openai-curated"]
+    enabled = true
+
+    [plugins."github@openai-curated"]
+    enabled = true
+
+    [mcp_servers.discord-questions-discord]
+    url = "https://discord-questions.convex.dev/mcp"
+
+    [mcp_servers.angular-cli]
+    command = "pnpm"
+    args = ["exec", "ng", "mcp"]
+    cwd = "/home/dwitt/workspace/braket-tickets/frontend"
+
+    [mcp_servers.linear]
+    url = "https://mcp.linear.app/mcp"
+
+    [mcp_servers.posthog]
+    url = "https://mcp.posthog.com/mcp"
+
+    [mcp_servers.playwright]
+    command = "npx"
+    args = [
+      "-y",
+      "@playwright/mcp@latest",
+      "--browser",
+      "chrome",
+      "--executable-path",
+      "/run/current-system/sw/bin/google-chrome",
+      "--headless",
+    ]
+  '';
+
+  codexConfigSeed = pkgs.writeText "codex-config.toml" codexConfigText;
+  codexConfigSeedHash = builtins.hashString "sha256" codexConfigText;
+  codexConfigStateSeed = pkgs.writeText "codex-config-seed.sha256" "${codexConfigSeedHash}\n";
+in
 {
   home.username = "dwitt";
   home.homeDirectory = "/home/dwitt";
@@ -10,11 +61,12 @@
     kdePackages.kate
     code-cursor
     ghostty
-    zed-editor
+    zed-editor-fhs
     inputs.browser-previews.packages.${pkgs.system}.google-chrome-beta
     discord
     discordo
     endcord
+    openrgb
 
     # CLI essentials (modern replacements - learn these alongside the originals)
     htop
@@ -97,6 +149,41 @@
     X-GNOME-Autostart-enabled=true
     Hidden=false
     NoDisplay=false
+  '';
+
+  # Codex mutates the user config at runtime for skills and tool approvals, so
+  # seed it into place as a regular file instead of an immutable store symlink.
+  home.activation.codexMutableConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    codex_dir="${config.home.homeDirectory}/.codex"
+    codex_config="$codex_dir/config.toml"
+    codex_state="$codex_dir/.config.toml.nix-seed.sha256"
+    codex_seed_hash="${codexConfigSeedHash}"
+    needs_seed=0
+
+    if [ ! -e "$codex_config" ]; then
+      needs_seed=1
+    elif [ -L "$codex_config" ]; then
+      codex_target="$(readlink -f "$codex_config" 2>/dev/null || true)"
+      case "$codex_target" in
+        /nix/store/*)
+          needs_seed=1
+          ;;
+      esac
+    elif [ -f "$codex_state" ]; then
+      current_hash="$(sha256sum "$codex_config")"
+      current_hash="''${current_hash%% *}"
+      IFS= read -r previous_hash < "$codex_state"
+      if [ "$current_hash" = "$previous_hash" ] && [ "$current_hash" != "$codex_seed_hash" ]; then
+        needs_seed=1
+      fi
+    fi
+
+    if [ "$needs_seed" -eq 1 ]; then
+      $DRY_RUN_CMD mkdir -p "$codex_dir"
+      $DRY_RUN_CMD rm -f "$codex_config"
+      $DRY_RUN_CMD install -m 600 ${codexConfigSeed} "$codex_config"
+      $DRY_RUN_CMD install -m 600 ${codexConfigStateSeed} "$codex_state"
+    fi
   '';
 
   # Fish as interactive shell
