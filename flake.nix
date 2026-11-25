@@ -154,9 +154,9 @@
                 playwright-packages =
                   final.callPackage "${inputs.playwright}/playwright-driver/driver.nix" { };
               in {
-                claude-code = inputs.claude-code-nix.packages.${prev.system}.default;
-                antigravity = inputs.antigravity-nix.packages.${prev.system}.default;
-                codex = inputs.codex-cli-nix.packages.${prev.system}.default;
+                claude-code = inputs.claude-code-nix.packages.${prev.stdenv.hostPlatform.system}.default;
+                antigravity = inputs.antigravity-nix.packages.${prev.stdenv.hostPlatform.system}.default;
+                codex = inputs.codex-cli-nix.packages.${prev.stdenv.hostPlatform.system}.default;
                 endcord = prev.callPackage endcordPackage { };
                 playwright-test = playwright-packages.playwright-test;
                 playwright-driver = playwright-packages.playwright-core;

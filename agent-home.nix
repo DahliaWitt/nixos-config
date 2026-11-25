@@ -9,7 +9,6 @@
   home.packages = with pkgs; [
     claude-code
     codex
-    gemini-cli
 
     git
     gh

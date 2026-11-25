@@ -62,7 +62,7 @@ in
     code-cursor
     ghostty
     zed-editor-fhs
-    inputs.browser-previews.packages.${pkgs.system}.google-chrome-beta
+    inputs.browser-previews.packages.${pkgs.stdenv.hostPlatform.system}.google-chrome-beta
     discord
     discordo
     endcord
@@ -117,7 +117,6 @@ in
     claude-code
     antigravity
     codex
-    gemini-cli
     playwright-test
   ];
 
