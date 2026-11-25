@@ -118,8 +118,6 @@ in
     antigravity
     codex
     gemini-cli
-    t3
-    t3code
     playwright-test
   ];
 

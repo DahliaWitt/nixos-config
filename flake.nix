@@ -30,11 +30,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    t3code-nix = {
-      url = "github:Sawrz/t3code-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     playwright = {
       url = "github:pietdevries94/playwright-web-flake";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -156,20 +151,13 @@
           nixpkgs.overlays = [
             (final: prev:
               let
-                playwright-src = final.applyPatches {
-                  name = "playwright-web-flake-patched";
-                  src = inputs.playwright;
-                  patches = [ ./patches/playwright-web-flake-libhyphen.patch ];
-                };
                 playwright-packages =
-                  final.callPackage "${playwright-src}/playwright-driver/driver.nix" { };
+                  final.callPackage "${inputs.playwright}/playwright-driver/driver.nix" { };
               in {
                 claude-code = inputs.claude-code-nix.packages.${prev.system}.default;
                 antigravity = inputs.antigravity-nix.packages.${prev.system}.default;
                 codex = inputs.codex-cli-nix.packages.${prev.system}.default;
                 endcord = prev.callPackage endcordPackage { };
-                t3code = inputs.t3code-nix.packages.${prev.system}.t3code;
-                t3 = inputs.t3code-nix.packages.${prev.system}.t3;
                 playwright-test = playwright-packages.playwright-test;
                 playwright-driver = playwright-packages.playwright-core;
               })
@@ -182,6 +170,7 @@
           home-manager.useUserPackages = true;
           home-manager.extraSpecialArgs = { inherit inputs; };
           home-manager.users.dwitt = import ./home.nix;
+          home-manager.users.agent = import ./agent-home.nix;
         }
       ];
     };
