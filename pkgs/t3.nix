@@ -12,11 +12,11 @@
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "t3";
-  version = "0.1.12";
+  version = "0.1.13";
 
   src = fetchurl {
     url = "https://github.com/pingdotgg/t3code/releases/download/v${finalAttrs.version}/t3-${finalAttrs.version}-linux-x64.tar.gz";
-    hash = "sha256-m6PbRuNVT7mXD9Xt6egjwvbW9nY/QDQL1MjvawlQHFQ=";
+    hash = "sha256-ZOD4RG0/YYsVfU5aCmgIqzyL8aGz5E6rMQDlVL4F5dc=";
   };
 
   nativeBuildInputs = [
